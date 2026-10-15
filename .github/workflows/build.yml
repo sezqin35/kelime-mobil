@@ -32,9 +32,9 @@ jobs:
     - name: Buildozer Kurulumu
       run: |
         pip install --upgrade pip
-        pip install "buildozer>=1.5.0" "cython<3.0.0" virtualenv
+        pip install "buildozer==1.5.0" "cython<3.0.0" virtualenv
 
-    - name: APK Derleme (Lisanslar Otomatik Kabul)
+    - name: APK Derleme
       env:
         ACCEPT_BUILD_TOOLS_LICENSES: yes
       run: |
