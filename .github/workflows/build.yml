@@ -34,9 +34,11 @@ jobs:
         pip install --upgrade pip
         pip install "buildozer>=1.5.0" "cython<3.0.0" virtualenv
 
-    - name: APK Derleme
+    - name: APK Derleme (Lisanslar Otomatik Kabul)
+      env:
+        ACCEPT_BUILD_TOOLS_LICENSES: yes
       run: |
-        buildozer android debug
+        yes | buildozer -v android debug
 
     - name: APK Dosyasını Yukle
       uses: actions/upload-artifact@v4
