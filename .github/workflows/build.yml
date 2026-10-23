@@ -1,4 +1,4 @@
-name: Android APK Derleyici
+name: APK Build
 
 on:
   push:
@@ -8,40 +8,18 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
-
     steps:
-    - name: Depoyu Klonla
-      uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Python Kurulumu
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
+      - name: Build APK with Buildozer
+        uses: ArtemSBulgakov/buildozer-action@v1
+        id: buildozer
+        with:
+          command: buildozer android debug
+          buildozer_version: stable
 
-    - name: Java Kurulumu
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '17'
-
-    - name: Sistem Paketlerini Kur
-      run: |
-        sudo apt update
-        sudo apt install -y git zip unzip autoconf libtool pkg-config zlib1g-dev libncurses-dev cmake libffi-dev libssl-dev
-
-    - name: Buildozer Kurulumu
-      run: |
-        pip install --upgrade pip
-        pip install "buildozer==1.5.0" "cython<3.0.0" virtualenv
-
-    - name: APK Derleme
-      env:
-        ACCEPT_BUILD_TOOLS_LICENSES: yes
-      run: |
-        yes | buildozer -v android debug
-
-    - name: APK Dosyasını Yukle
-      uses: actions/upload-artifact@v4
-      with:
-        name: Kelime-Avcilari-APK
-        path: bin/*.apk
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: kelimeoyunu-apk
+          path: ${{ steps.buildozer.outputs.filename }}
