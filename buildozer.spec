@@ -6,15 +6,17 @@ source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,mp3,wav,txt
 source.exclude_dirs = bin,.buildozer,.github,.git
 version = 1.0.0
-requirements = python3,kivy==2.3.0,pyjnius,kivmob
+requirements = python3==3.11.5,hostpython3==3.11.5,kivy==2.3.0,pyjnius,kivmob
 orientation = portrait
 fullscreen = 0
 icon.filename = %(source.dir)s/icon.png
 
-android.api = 34
+p4a.branch = v2024.01.21
+
+android.api = 33
 android.minapi = 21
 android.ndk_api = 21
-android.archs = arm64-v8a, armeabi-v7a
+android.archs = arm64-v8a
 android.accept_sdk_license = True
 android.enable_androidx = True
 android.permissions = INTERNET,ACCESS_NETWORK_STATE
