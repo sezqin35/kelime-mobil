@@ -1,5 +1,5 @@
 [app]
-title = Kelime Oyunu
+title = Kelime Avcıları
 package.name = kelimeoyunu
 package.domain = com.szggames.kelimeoyunu
 source.dir = .
