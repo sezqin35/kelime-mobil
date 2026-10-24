@@ -24,13 +24,15 @@ android.meta_data = com.google.android.gms.ads.APPLICATION_ID=ca-app-pub-4733411
 android.gradle_dependencies = com.google.android.gms:play-services-ads:20.6.0
 
 [app@play]
-requirements = python3,kivy,pyjnius,kivmob
+requirements = python3,kivy,pyjnius
 p4a.branch = develop
 android.api = 36
 android.ndk = 29
 android.archs = arm64-v8a
 android.release_artifact = aab
 android.numeric_version = 1
+android.add_src = java
+android.gradle_dependencies = com.google.android.gms:play-services-ads:23.6.0
 
 [buildozer]
 log_level = 2
