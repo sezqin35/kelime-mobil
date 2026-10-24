@@ -41,6 +41,9 @@ ADMOB_TEST_GECIS_ID = "ca-app-pub-3940256099942544/1033173712"
 
 OYUN_SURESI = 120
 
+# Soru kutusunun üstünde seviye etiketi (ÇOK KOLAY, ZOR...) gösterilsin mi?
+SEVIYE_ETIKETI_GOSTER = False
+
 # Soru zorluk planı: (seviye, kaç soru). Bu planın sonrası hep "ÇOK ZOR".
 # 1 = Çok kolay, 2 = Kolay, 3 = Orta zor, 4 = Çok zor
 SEVIYE_PLANI = [(1, 3), (2, 3), (3, 6)]
@@ -86,13 +89,34 @@ KOYU = (0.07, 0.08, 0.12, 0.97)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # AdMob Entegrasyonu
+# Yeni (Google Play) derlemede reklamlar java/.../AdHelper.java üzerinden çalışır.
+# kivmob sadece eski test derlemesinde yedek olarak denenir.
+KivMob = None
 if platform == 'android':
     try:
         from kivmob import KivMob
-    except ImportError:
+    except Exception:
         KivMob = None
-else:
-    KivMob = None
+
+
+class YerelReklam:
+    """Güncel AdMob SDK'sı ile geçiş (interstitial) reklamı.
+    Java tarafı: java/com/szggames/kelimeoyunu/AdHelper.java"""
+
+    def __init__(self, birim_id):
+        from jnius import autoclass
+        self._helper = autoclass('com.szggames.kelimeoyunu.AdHelper')
+        self._activity = autoclass('org.kivy.android.PythonActivity').mActivity
+        self._helper.init(self._activity, birim_id)
+
+    def is_interstitial_loaded(self):
+        return bool(self._helper.isLoaded())
+
+    def request_interstitial(self):
+        self._helper.load(self._activity)
+
+    def show_interstitial(self):
+        self._helper.show(self._activity)
 
 
 # ---------------------------------------------------------------------------
@@ -512,7 +536,8 @@ class OyunEkrani(Screen):
             self.seviye_kenar_renk = Color(1, 1, 1, 1)
             self.seviye_kenar = Line(rounded_rectangle=(0, 0, 10, 10, dp(11)), width=1.2)
         self.seviye_label.bind(pos=self._update_seviye_rect, size=self._update_seviye_rect)
-        self.layout.add_widget(self.seviye_label)
+        if SEVIYE_ETIKETI_GOSTER:
+            self.layout.add_widget(self.seviye_label)
 
         self.kelime_box = GridLayout(
             rows=1,
@@ -1332,14 +1357,19 @@ class KelimeApp(App):
             self.icon = yol('icon.png')
 
         self.ads = None
-        if platform == 'android' and KivMob:
+        if platform == 'android':
             gecis_id = ADMOB_TEST_GECIS_ID if REKLAM_TEST_MODU else ADMOB_GERCEK_GECIS_ID
             try:
-                self.ads = KivMob(ADMOB_APP_ID)
-                self.ads.new_interstitial(gecis_id)
-                self.ads.request_interstitial()
+                self.ads = YerelReklam(gecis_id)
             except Exception:
                 self.ads = None
+                if KivMob:
+                    try:
+                        self.ads = KivMob(ADMOB_APP_ID)
+                        self.ads.new_interstitial(gecis_id)
+                        self.ads.request_interstitial()
+                    except Exception:
+                        self.ads = None
 
         Window.bind(on_keyboard=self.geri_tusu)
 
