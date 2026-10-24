@@ -23,6 +23,15 @@ android.permissions = INTERNET,ACCESS_NETWORK_STATE
 android.meta_data = com.google.android.gms.ads.APPLICATION_ID=ca-app-pub-4733411214953557~3933038318
 android.gradle_dependencies = com.google.android.gms:play-services-ads:20.6.0
 
+[app@play]
+requirements = python3,kivy,pyjnius,kivmob
+p4a.branch = develop
+android.api = 36
+android.ndk = 29
+android.archs = arm64-v8a
+android.release_artifact = aab
+android.numeric_version = 1
+
 [buildozer]
 log_level = 2
 warn_on_root = 1
