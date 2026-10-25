@@ -41,6 +41,9 @@ ADMOB_TEST_GECIS_ID = "ca-app-pub-3940256099942544/1033173712"
 
 OYUN_SURESI = 120
 
+# Alt butonların (HARF AL / GEÇ / BENJAMİN) büyüklüğü. Büyütmek için artır (ör. 2.3), küçültmek için azalt (ör. 1.6).
+ALT_BUTON_OLCEK = 1.9
+
 # Soru kutusunun üstünde seviye etiketi (ÇOK KOLAY, ZOR...) gösterilsin mi?
 SEVIYE_ETIKETI_GOSTER = False
 
@@ -97,6 +100,54 @@ if platform == 'android':
         from kivmob import KivMob
     except Exception:
         KivMob = None
+
+
+if platform == 'android':
+    try:
+        from android.runnable import run_on_ui_thread
+    except Exception:
+        def run_on_ui_thread(f):
+            return f
+else:
+    def run_on_ui_thread(f):
+        return f
+
+
+@run_on_ui_thread
+def tam_ekran_uygula():
+    """Durum çubuğunu ve alt gezinme çubuğunu gizler (tam ekran / immersive)."""
+    if platform != 'android':
+        return
+    try:
+        from jnius import autoclass
+        activity = autoclass('org.kivy.android.PythonActivity').mActivity
+        window = activity.getWindow()
+        sdk = autoclass('android.os.Build$VERSION').SDK_INT
+
+        if sdk >= 28:
+            # Kamera çentiği olan telefonlarda içerik tüm ekranı kullansın
+            lp = window.getAttributes()
+            lp.layoutInDisplayCutoutMode = 1
+            window.setAttributes(lp)
+
+        if sdk >= 30:
+            controller = window.getInsetsController()
+            if controller is not None:
+                tipler = autoclass('android.view.WindowInsets$Type')
+                controller.hide(tipler.systemBars())
+                controller.setSystemBarsBehavior(
+                    autoclass('android.view.WindowInsetsController').BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE)
+        else:
+            view = autoclass('android.view.View')
+            bayraklar = (view.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                         | view.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                         | view.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                         | view.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                         | view.SYSTEM_UI_FLAG_FULLSCREEN
+                         | view.SYSTEM_UI_FLAG_IMMERSIVE_STICKY)
+            window.getDecorView().setSystemUiVisibility(bayraklar)
+    except Exception:
+        pass
 
 
 class YerelReklam:
@@ -350,7 +401,7 @@ class ResimliButon(Button):
 
         self.lbl = Label(
             text=self.alt_yazi,
-            font_size='13sp',
+            font_size='16sp',
             bold=True,
             color=(1, 1, 1, 1)
         )
@@ -359,10 +410,13 @@ class ResimliButon(Button):
                   state=self._yerlesim_guncelle, disabled=self._yerlesim_guncelle)
 
     def _yerlesim_guncelle(self, *args):
-        self.img.size = (self.width, self.height * 0.75)
-        self.img.pos = (self.x, self.y + self.height * 0.22)
+        # Görsellerin etrafında saydam boşluk olduğu için kutudan büyük çizilir
+        yan = self.width * ALT_BUTON_OLCEK
+        self.img.size = (yan, yan)
+        self.img.center_x = self.center_x
+        self.img.center_y = self.y + self.height * 0.60
 
-        self.lbl.size = (self.width, self.height * 0.25)
+        self.lbl.size = (self.width, self.height * 0.20)
         self.lbl.pos = (self.x, self.y)
 
         # Basılı / pasif durum geri bildirimi
@@ -488,7 +542,7 @@ class OyunEkrani(Screen):
 
         self.btn_ses = SadeMuzikButonu(
             size_hint=(None, None),
-            size=(dp(46), dp(38)),
+            size=(dp(54), dp(46)),
             pos_hint={'right': 0.98, 'top': 0.99}
         )
         self.btn_ses.bind(on_release=self.ses_degistir)
@@ -549,9 +603,9 @@ class OyunEkrani(Screen):
         self.layout.add_widget(self.kelime_box)
 
         self.alt_butonlar_kutusu = BoxLayout(
-            size_hint=(0.94, 0.12),
-            pos_hint={'center_x': 0.5, 'y': 0.03},
-            spacing=dp(12)
+            size_hint=(0.98, 0.18),
+            pos_hint={'center_x': 0.5, 'y': 0.015},
+            spacing=dp(4)
         )
 
         self.btn_harf = ResimliButon(
@@ -1378,6 +1432,11 @@ class KelimeApp(App):
         sm.add_widget(OyunEkrani(name='oyun'))
         return sm
 
+    def on_start(self):
+        # Pencere oluştuktan sonra birkaç kez dene (bazı telefonlar geç uygular)
+        for gecikme in (0.3, 1.0, 2.5):
+            Clock.schedule_once(lambda dt: tam_ekran_uygula(), gecikme)
+
     def geri_tusu(self, window, key, *args):
         # 27 = Android geri tuşu / ESC
         if key == 27:
@@ -1397,6 +1456,7 @@ class KelimeApp(App):
         return True
 
     def on_resume(self):
+        Clock.schedule_once(lambda dt: tam_ekran_uygula(), 0.3)
         oyun_ekrani = self.root.get_screen('oyun')
         if not oyun_ekrani:
             return
