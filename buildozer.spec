@@ -33,8 +33,9 @@ android.ndk = 29
 android.archs = arm64-v8a
 android.release_artifact = aab
 android.numeric_version = 1
+android.minapi = 23
 android.add_src = java
-android.gradle_dependencies = com.google.android.gms:play-services-ads:23.6.0
+android.gradle_dependencies = com.google.android.gms:play-services-ads:24.9.0
 
 [buildozer]
 log_level = 2
