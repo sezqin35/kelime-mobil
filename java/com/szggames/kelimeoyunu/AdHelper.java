@@ -1,7 +1,12 @@
 package com.szggames.kelimeoyunu;
 
 import android.app.Activity;
+import android.content.pm.PackageInfo;
+import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
+import android.webkit.WebView;
 
 import com.google.android.gms.ads.AdError;
 import com.google.android.gms.ads.AdRequest;
@@ -24,9 +29,30 @@ public class AdHelper {
     private static volatile boolean loading = false;
     private static volatile String unitId = null;
     private static volatile String status = "baslamadi";
+    private static volatile int retryCount = 0;
+    private static final int MAX_RETRY = 6;
+    private static final long RETRY_DELAY_MS = 12000;
 
     public static String getStatus() {
-        return status;
+        return status + " | " + deviceInfo();
+    }
+
+    private static String deviceInfo() {
+        String web = "WebView: yok/okunamadi";
+        try {
+            if (Build.VERSION.SDK_INT >= 26) {
+                PackageInfo pi = WebView.getCurrentWebViewPackage();
+                if (pi != null) {
+                    web = "WebView: " + pi.packageName + " " + pi.versionName;
+                } else {
+                    web = "WebView: YOK";
+                }
+            }
+        } catch (Throwable t) {
+            web = "WebView hata: " + t.getClass().getSimpleName();
+        }
+        return Build.MANUFACTURER + " " + Build.MODEL + " (Android " + Build.VERSION.SDK_INT + ") " + web
+                + " | deneme=" + retryCount;
     }
 
     public static void init(final Activity activity, final String adUnitId) {
@@ -73,6 +99,7 @@ public class AdHelper {
                         public void onAdLoaded(InterstitialAd ad) {
                             interstitial = ad;
                             loading = false;
+                            retryCount = 0;
                             status = "HAZIR (reklam yuklendi)";
                         }
 
@@ -82,6 +109,15 @@ public class AdHelper {
                             loading = false;
                             status = "yuklenemedi: kod=" + error.getCode() + " " + error.getMessage();
                             Log.w(TAG, "Reklam yuklenemedi: " + error.getMessage());
+                            if (retryCount < MAX_RETRY) {
+                                retryCount++;
+                                new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        doLoad(activity);
+                                    }
+                                }, RETRY_DELAY_MS);
+                            }
                         }
                     });
         } catch (Throwable t) {
