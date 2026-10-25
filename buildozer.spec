@@ -8,8 +8,10 @@ source.exclude_dirs = bin,.buildozer,.github,.git
 version = 1.0.0
 requirements = python3==3.11.5,hostpython3==3.11.5,kivy==2.3.0,pyjnius,kivmob
 orientation = portrait
-fullscreen = 0
+fullscreen = 1
 icon.filename = %(source.dir)s/icon.png
+presplash.filename = %(source.dir)s/Kelime_oyunu.png
+android.presplash_color = #000000
 
 p4a.branch = v2024.01.21
 
