@@ -41,6 +41,9 @@ ADMOB_TEST_GECIS_ID = "ca-app-pub-3940256099942544/1033173712"
 
 OYUN_SURESI = 120
 
+# Geçici: oyun sonu ekranında reklam durumunu gösterir. Reklam sorunu çözülünce False yap.
+REKLAM_DURUMU_GOSTER = True
+
 # Alt butonların (HARF AL / GEÇ / BENJAMİN) büyüklüğü. Büyütmek için artır (ör. 2.3), küçültmek için azalt (ör. 1.6).
 ALT_BUTON_OLCEK = 1.9
 
@@ -168,6 +171,12 @@ class YerelReklam:
 
     def show_interstitial(self):
         self._helper.show(self._activity)
+
+    def durum(self):
+        try:
+            return str(self._helper.getStatus())
+        except Exception as e:
+            return "durum okunamadi: %s" % e
 
 
 # ---------------------------------------------------------------------------
@@ -1081,6 +1090,14 @@ class OyunEkrani(Screen):
         self.kilitleri_ac()
         self.oyun_aktif = True
 
+        # Oyun sonunda gösterilecek reklamı şimdiden hazırla
+        try:
+            app = App.get_running_app()
+            if app and getattr(app, 'ads', None) and not app.ads.is_interstitial_loaded():
+                app.ads.request_interstitial()
+        except Exception:
+            pass
+
         if self.bg_music and self.ses_durumu and self.bg_music.state != 'play':
             self.bg_music.play()
 
@@ -1247,7 +1264,18 @@ class OyunEkrani(Screen):
         btn_menu.bind(on_release=lambda x: [popup_bitti.dismiss(), self.menuye_don()])
         ana_kutu.add_widget(btn_menu)
 
-        popup_bitti = popup_yap('OYUN BİTTİ', ana_kutu, (0.9, 0.58), kapanabilir=False)
+        if REKLAM_DURUMU_GOSTER:
+            app = App.get_running_app()
+            if getattr(app, 'ads', None) and hasattr(app.ads, 'durum'):
+                durum = "Reklam: " + app.ads.durum()
+            else:
+                durum = "Reklam: " + str(getattr(app, 'reklam_hatasi', 'bilinmiyor'))
+            lbl_durum = Label(text=durum, font_size='11sp', color=(0.7, 0.7, 0.7, 1),
+                              size_hint_y=None, height=dp(44), halign='center', valign='middle')
+            lbl_durum.bind(size=lbl_durum.setter('text_size'))
+            ana_kutu.add_widget(lbl_durum)
+
+        popup_bitti = popup_yap('OYUN BİTTİ', ana_kutu, (0.9, 0.64), kapanabilir=False)
         popup_bitti.open()
 
     def reklam_izlet_ve_cevaplari_goster(self):
@@ -1411,12 +1439,15 @@ class KelimeApp(App):
             self.icon = yol('icon.png')
 
         self.ads = None
+        self.reklam_hatasi = "android degil"
         if platform == 'android':
             gecis_id = ADMOB_TEST_GECIS_ID if REKLAM_TEST_MODU else ADMOB_GERCEK_GECIS_ID
             try:
                 self.ads = YerelReklam(gecis_id)
-            except Exception:
+                self.reklam_hatasi = ""
+            except Exception as e:
                 self.ads = None
+                self.reklam_hatasi = "Java modulu yuklenemedi: %s: %s" % (type(e).__name__, str(e)[:140])
                 if KivMob:
                     try:
                         self.ads = KivMob(ADMOB_APP_ID)
