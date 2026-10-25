@@ -1271,11 +1271,11 @@ class OyunEkrani(Screen):
             else:
                 durum = "Reklam: " + str(getattr(app, 'reklam_hatasi', 'bilinmiyor'))
             lbl_durum = Label(text=durum, font_size='11sp', color=(0.7, 0.7, 0.7, 1),
-                              size_hint_y=None, height=dp(44), halign='center', valign='middle')
+                              size_hint_y=None, height=dp(70), halign='center', valign='middle')
             lbl_durum.bind(size=lbl_durum.setter('text_size'))
             ana_kutu.add_widget(lbl_durum)
 
-        popup_bitti = popup_yap('OYUN BİTTİ', ana_kutu, (0.9, 0.64), kapanabilir=False)
+        popup_bitti = popup_yap('OYUN BİTTİ', ana_kutu, (0.9, 0.70), kapanabilir=False)
         popup_bitti.open()
 
     def reklam_izlet_ve_cevaplari_goster(self):
